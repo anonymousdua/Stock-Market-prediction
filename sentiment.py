@@ -33,6 +33,7 @@ def get_avg_sentiment(symbol: str, date: str):
         label = sentiment['label'].lower()
         score = sentiment_map.get(label, 1)  # default to neutral
         scores.append(score)
+        #print(f'{i}/{len(articles)} Processed')
 
     avg_score = sum(scores) / len(scores)
     return avg_score

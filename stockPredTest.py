@@ -9,7 +9,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 import warnings
-from sentiment import get_avg_sentiment  # Assuming sentiment.py is in the same directory
+from sentimentTest import batch_get_sentiments  # Assuming sentiment.py is in the same directory
 
 warnings.filterwarnings('ignore')
 
@@ -132,7 +132,10 @@ if st.sidebar.button("Run Prediction"):
     with st.spinner(f"Fetching data for {stock_name}..."):
         data = fetch_stock_data(symbol)
         data = data.reset_index()
-        data["Sentiment"] = data["Date"].dt.strftime('%Y-%m-%d').apply(lambda d: get_avg_sentiment(symbol, d))
+        with st.spinner("Fetching sentiment data..."):
+            dates_list = data["Date"].dt.strftime('%Y-%m-%d').tolist()
+            sentiment_results = batch_get_sentiments(symbol, dates_list)
+            data["Sentiment"] = data["Date"].dt.strftime('%Y-%m-%d').map(sentiment_results)
 
     if data is not None:
         st.subheader(f"Recent Data for {stock_name} ({symbol})")
@@ -183,7 +186,7 @@ if st.sidebar.button("Run Prediction"):
 
             # We need to inverse transform the predictions to get the actual price values
             # Create a dummy array with the same shape as the scaler expects (5 features)
-            dummy_predictions = np.zeros((len(predictions_scaled), 5))
+            dummy_predictions = np.zeros((len(predictions_scaled), 6))
             dummy_predictions[:, 3] = predictions_scaled.flatten() # Put predictions in the 'Close' column
             
             # Inverse transform the dummy array
@@ -213,8 +216,11 @@ if st.sidebar.button("Run Prediction"):
         st.subheader("Actual vs. Predicted Prices (Last 30 Days)")
         
         fig, ax = plt.subplots(figsize=(14, 7))
-        ax.plot(data.index[training_data_len:], actual_prices, label='Actual Price', color='blue', marker='o')
-        ax.plot(data.index[training_data_len:], predictions, label='Predicted Price', color='red', linestyle='--', marker='x')
+        plot_dates = data['Date'][training_data_len:]
+        ax.plot(plot_dates, actual_prices, label='Actual Price', color='blue', marker='o')
+        ax.plot(plot_dates, predictions, label='Predicted Price', color='red', linestyle='--', marker='x')  
+        #ax.plot(data.index[training_data_len:], actual_prices, label='Actual Price', color='blue', marker='o')
+        #ax.plot(data.index[training_data_len:], predictions, label='Predicted Price', color='red', linestyle='--', marker='x')
         ax.set_title(f'{stock_name} ({symbol}) - Price Prediction', fontsize=16)
         ax.set_xlabel('Date', fontsize=12)
         ax.set_ylabel('Price (USD)', fontsize=12)
@@ -227,7 +233,8 @@ if st.sidebar.button("Run Prediction"):
         # 7. Display Prediction Data Table
         st.subheader("Detailed Prediction Data")
         prediction_df = pd.DataFrame({
-            'Date': data.index[training_data_len:],
+            'Date': data['Date'][training_data_len:].dt.strftime('%Y-%m-%d'),
+            #'Date': data.index[training_data_len:],
             'Actual Price': actual_prices,
             'Predicted Price': predictions,
             'Difference ($)': predictions - actual_prices,
