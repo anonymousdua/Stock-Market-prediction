@@ -20,9 +20,9 @@ st.set_page_config(page_title="Stock Price Predictor", layout="wide")
 st.title("LSTM Stock Price Predictor")
 st.markdown("""
 This application predicts the closing price of a stock for the next 30 days.
-- It uses the last 120 days of stock data from Yahoo Finance.
-- The first 90 days are used to **train** a Long Short-Term Memory (LSTM) model.
-- The last 30 days are used to **test** the model's performance.
+- It uses the last 150 days of stock data from Yahoo Finance.
+- It dynamically allocates training data based on the selected lookback period.
+- The last 30 days are always used to **test** the model's performance.
 - Key metrics like **RMSE, Accuracy, and Directional Accuracy** are calculated on the test data.
 """)
 
@@ -53,9 +53,9 @@ symbol = POPULAR_STOCKS[stock_name]
 st.sidebar.header("Model Parameters")
 lookback_period = st.sidebar.slider(
     "Lookback Period (Days)",
-    min_value=30,
-    max_value=80,
-    value=60,
+    min_value=60,
+    max_value=120,
+    value=90,
     help="Number of past days' data to use for predicting the next day."
 )
 epochs = st.sidebar.slider(
@@ -77,11 +77,11 @@ batch_size = st.sidebar.select_slider(
 @st.cache_data
 def fetch_stock_data(symbol):
     """
-    Fetches the last 120 days of stock data for the given symbol.
+    Fetches the last 150+ days of stock data for the given symbol.
     """
     try:
         end_date = pd.Timestamp.now()
-        start_date = end_date - pd.Timedelta(days=180) # Fetch more to ensure we get 120 trading days
+        start_date = end_date - pd.Timedelta(days=250) # Fetch more to ensure we get 150+ trading days
         stock = yf.Ticker(symbol)
         data = stock.history(start=start_date, end=end_date)
         
@@ -89,10 +89,10 @@ def fetch_stock_data(symbol):
             st.error(f"No data found for symbol {symbol}. Please try another stock.")
             return None
         
-        # Select relevant columns and take the last 120 trading days
-        data = data[['Open', 'High', 'Low', 'Close', 'Volume']].tail(120)
+        # Select relevant columns and take the last 150 trading days
+        data = data[['Open', 'High', 'Low', 'Close', 'Volume']].tail(170)
 
-        if len(data) < 120:
+        if len(data) < 150:
             st.warning(f"Only found {len(data)} trading days of data. The model might be less accurate.")
 
         return data
@@ -143,15 +143,25 @@ if st.sidebar.button("Run Prediction"):
 
         # 1. Data Splitting and Scaling
         with st.spinner("Preparing data and scaling..."):
-            # Use all 5 features for scaling
+            # Use all features for scaling
             features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment']
             data_featured = data[features].values
+            
+            # Ensure we have enough data for the selected lookback period
+            min_training_data = lookback_period + 10  # Need at least lookback + some extra for training
+            total_data_needed = min_training_data + 30  # + 30 for testing
+            
+            if len(data_featured) < total_data_needed:
+                st.error(f"Not enough data! Need at least {total_data_needed} days but only have {len(data_featured)} days. Please reduce the lookback period or try a different stock.")
+                st.stop()
 
-            # Split data into 90 days for training and 30 for testing
-            training_data_len = 90
+            # Split data: Use enough for training (considering lookback) and 30 for testing
+            training_data_len = len(data_featured) - 30
             train_data = data_featured[:training_data_len]
             test_data = data_featured[training_data_len-lookback_period:]
-            print(data)
+            
+            #st.info(f"Using {training_data_len} days for training and 30 days for testing (Lookback: {lookback_period} days)")
+            #print(data_featured)
 
             # Scale the data
             scaler = MinMaxScaler(feature_range=(0, 1))
@@ -161,6 +171,13 @@ if st.sidebar.button("Run Prediction"):
         # 2. Create Training Sequences
         with st.spinner("Creating training sequences..."):
             X_train, y_train = create_sequences(scaled_train_data, lookback_period)
+            
+            # Validate that we have training data
+            if len(X_train) == 0:
+                st.error(f"Cannot create training sequences! Need at least {lookback_period + 1} days of training data. Consider reducing the lookback period.")
+                st.stop()
+            
+            #st.success(f"Created {len(X_train)} training sequences with lookback period of {lookback_period} days")
 
         # 3. Build and Train the LSTM Model
         with st.spinner("Building and training the LSTM model... This may take a moment."):
@@ -249,4 +266,3 @@ if st.sidebar.button("Run Prediction"):
 
 else:
     st.info("Click the 'Run Prediction' button in the sidebar to start.")
-
