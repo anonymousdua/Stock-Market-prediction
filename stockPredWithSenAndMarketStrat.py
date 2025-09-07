@@ -16,7 +16,9 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="Stock Price Predictor", layout="wide")
 
 # --- App Title and Description ---
-st.title("LSTM Stock Price Predictor")
+st.title("LSTM Stock Price Predictor with Technical Indicators")
+st.markdown("This app uses an LSTM neural network, along with sentiment analysis and Simple Moving Averages (SMA), to predict stock prices.")
+
 
 # --- Sidebar for User Inputs ---
 st.sidebar.header("Stock Selection")
@@ -69,11 +71,13 @@ batch_size = st.sidebar.select_slider(
 @st.cache_data
 def fetch_stock_data(symbol):
     """
-    Fetches the last 150+ days of stock data for the given symbol.
+    Fetches the last 200+ days of stock data for the given symbol.
+    We fetch more to have enough data for SMA calculations.
     """
     try:
         end_date = pd.Timestamp.now()
-        start_date = end_date - pd.Timedelta(days=250) # Fetch more to ensure we get 150+ trading days
+        # Fetch more days to account for NaN values from SMA calculation
+        start_date = end_date - pd.Timedelta(days=300) 
         stock = yf.Ticker(symbol)
         data = stock.history(start=start_date, end=end_date)
         
@@ -81,8 +85,8 @@ def fetch_stock_data(symbol):
             st.error(f"No data found for symbol {symbol}. Please try another stock.")
             return None
         
-        # Select relevant columns and take the last 150 trading days
-        data = data[['Open', 'High', 'Low', 'Close', 'Volume']].tail(170)
+        # Select relevant columns and take the last 200 trading days
+        data = data[['Open', 'High', 'Low', 'Close', 'Volume']].tail(200)
 
         if len(data) < 150:
             st.warning(f"Only found {len(data)} trading days of data. The model might be less accurate.")
@@ -123,56 +127,61 @@ def build_lstm_model(input_shape):
 if st.sidebar.button("Run Prediction"):
     with st.spinner(f"Fetching data for {stock_name}..."):
         data = fetch_stock_data(symbol)
-        data = data.reset_index()
-        with st.spinner("Fetching sentiment data..."):
+        
+    if data is not None:
+        # 1. Feature Engineering: Add SMAs and Sentiment
+        with st.spinner("Adding features (Sentiment & SMAs)..."):
+            data = data.reset_index()
+            
+            # Add Sentiment
             dates_list = data["Date"].dt.strftime('%Y-%m-%d').tolist()
             sentiment_results = batch_get_sentiments(symbol, dates_list)
             data["Sentiment"] = data["Date"].dt.strftime('%Y-%m-%d').map(sentiment_results)
-
-    if data is not None:
-        st.subheader(f"Recent Data for {stock_name} ({symbol})")
+            
+            # Add SMAs
+            data['SMA5'] = data['Close'].rolling(window=5).mean()
+            data['SMA10'] = data['Close'].rolling(window=10).mean()
+            data['SMA15'] = data['Close'].rolling(window=15).mean()
+            data['SMA20'] = data['Close'].rolling(window=20).mean()
+            
+            # Drop rows with NaN values created by SMA calculation
+            data.dropna(inplace=True)
+        
+        st.subheader(f"Recent Data for {stock_name} ({symbol}) with Features")
         st.dataframe(data.tail())
 
-        # 1. Data Splitting and Scaling
+        # 2. Data Splitting and Scaling
         with st.spinner("Preparing data and scaling..."):
             # Use all features for scaling
-            features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment']
+            features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment', 
+                        'SMA5', 'SMA10', 'SMA15', 'SMA20']
+            num_features = len(features) # Store number of features
             data_featured = data[features].values
             
-            # Ensure we have enough data for the selected lookback period
-            min_training_data = lookback_period + 10  # Need at least lookback + some extra for training
-            total_data_needed = min_training_data + 30  # + 30 for testing
-            
-            if len(data_featured) < total_data_needed:
-                st.error(f"Not enough data! Need at least {total_data_needed} days but only have {len(data_featured)} days. Please reduce the lookback period or try a different stock.")
+            # Ensure we have enough data after feature engineering
+            if len(data_featured) < lookback_period + 30:
+                st.error(f"Not enough data after adding features! Need at least {lookback_period + 30} days but only have {len(data_featured)}. Please reduce lookback period or try another stock.")
                 st.stop()
 
-            # Split data: Use enough for training (considering lookback) and 30 for testing
+            # Split data: Use enough for training and 30 for testing
             training_data_len = len(data_featured) - 30
             train_data = data_featured[:training_data_len]
             test_data = data_featured[training_data_len-lookback_period:]
             
-            #st.info(f"Using {training_data_len} days for training and 30 days for testing (Lookback: {lookback_period} days)")
-            #print(data_featured)
-
             # Scale the data
             scaler = MinMaxScaler(feature_range=(0, 1))
             scaled_train_data = scaler.fit_transform(train_data)
             scaled_test_data = scaler.transform(test_data)
-            print(scaled_test_data)
-
-        # 2. Create Training Sequences
+            
+        # 3. Create Training Sequences
         with st.spinner("Creating training sequences..."):
             X_train, y_train = create_sequences(scaled_train_data, lookback_period)
             
-            # Validate that we have training data
             if len(X_train) == 0:
                 st.error(f"Cannot create training sequences! Need at least {lookback_period + 1} days of training data. Consider reducing the lookback period.")
                 st.stop()
-            
-            #st.success(f"Created {len(X_train)} training sequences with lookback period of {lookback_period} days")
 
-        # 3. Build and Train the LSTM Model
+        # 4. Build and Train the LSTM Model
         with st.spinner("Building and training the LSTM model... This may take a moment."):
             model = build_lstm_model(input_shape=(X_train.shape[1], X_train.shape[2]))
             
@@ -189,23 +198,23 @@ if st.sidebar.button("Run Prediction"):
             progress_bar.empty()
             status_text.empty()
 
-        # 4. Create Test Sequences and Make Predictions
+        # 5. Create Test Sequences and Make Predictions
         with st.spinner("Making predictions on the test data..."):
             X_test, y_test_actual_scaled = create_sequences(scaled_test_data, lookback_period)
             predictions_scaled = model.predict(X_test)
 
             # We need to inverse transform the predictions to get the actual price values
-            # Create a dummy array with the same shape as the scaler expects (5 features)
-            dummy_predictions = np.zeros((len(predictions_scaled), 6))
-            dummy_predictions[:, 3] = predictions_scaled.flatten() # Put predictions in the 'Close' column
+            # Create a dummy array with the same shape as the scaler expects (num_features)
+            dummy_predictions = np.zeros((len(predictions_scaled), num_features))
+            dummy_predictions[:, 3] = predictions_scaled.flatten() # Put predictions in the 'Close' column (index 3)
             
             # Inverse transform the dummy array
-            predictions = scaler.inverse_transform(dummy_predictions)[:, 3] # Extract the 'Close' price
+            predictions = scaler.inverse_transform(dummy_predictions)[:, 3] # Extract only the 'Close' price
 
             # Get the actual prices for the test period
             actual_prices = data['Close'].values[training_data_len:]
 
-        # 5. Calculate Metrics
+        # 6. Calculate Metrics
         st.subheader("Model Performance on Test Data")
         rmse = np.sqrt(mean_squared_error(actual_prices, predictions))
         mape = np.mean(np.abs((actual_prices - predictions) / actual_prices)) * 100
@@ -222,15 +231,13 @@ if st.sidebar.button("Run Prediction"):
         col3.metric("Directional Accuracy", f"{directional_accuracy:.2f}%")
         st.caption("Prediction Accuracy is calculated as 100% - MAPE (Mean Absolute Percentage Error).")
 
-        # 6. Visualize the Results
+        # 7. Visualize the Results
         st.subheader("Actual vs. Predicted Prices (Last 30 Days)")
         
         fig, ax = plt.subplots(figsize=(14, 7))
         plot_dates = data['Date'][training_data_len:]
         ax.plot(plot_dates, actual_prices, label='Actual Price', color='blue', marker='o')
         ax.plot(plot_dates, predictions, label='Predicted Price', color='red', linestyle='--', marker='x')  
-        #ax.plot(data.index[training_data_len:], actual_prices, label='Actual Price', color='blue', marker='o')
-        #ax.plot(data.index[training_data_len:], predictions, label='Predicted Price', color='red', linestyle='--', marker='x')
         ax.set_title(f'{stock_name} ({symbol}) - Price Prediction', fontsize=16)
         ax.set_xlabel('Date', fontsize=12)
         ax.set_ylabel('Price (USD)', fontsize=12)
@@ -240,11 +247,10 @@ if st.sidebar.button("Run Prediction"):
         plt.tight_layout()
         st.pyplot(fig)
 
-        # 7. Display Prediction Data Table
+        # 8. Display Prediction Data Table
         st.subheader("Detailed Prediction Data")
         prediction_df = pd.DataFrame({
             'Date': data['Date'][training_data_len:].dt.strftime('%Y-%m-%d'),
-            #'Date': data.index[training_data_len:],
             'Actual Price': actual_prices,
             'Predicted Price': predictions,
             'Difference ($)': predictions - actual_prices,
