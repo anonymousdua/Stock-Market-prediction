@@ -1,0 +1,51 @@
+[1]A. Mishra, R. Singh, A. Agrawal, P. K. Arya, and A. Sharma, “Prediction of Exact Price of Stock and Direction of Stock Market Using Statistical and LSTM Model,” pp. 981–985, Jul. 2024, doi: https://doi.org/10.1109/aiars63200.2024.00184.
+
+[2]S. Ji et al., “Study of Stock Price Trends for Indian Share Market vs American Share Market Using LSTM,” pp. 1–5, Aug. 2024, doi: https://doi.org/10.1109/acet61898.2024.10730548.
+
+[3]K. Chen, Y. Zhou, and F. Dai, “A LSTM-based method for stock returns prediction: A case study of China stock market,” 2015 IEEE International Conference on Big Data (Big Data), Oct. 2015, doi: https://doi.org/10.1109/bigdata.2015.7364089.
+
+[4]N. Mishra, M. Anzar, S. Pandey, and S. Mishra, “A Review on Stock Market Trends and Stocks Price Prediction Using Sentiment Analysis and Market Data,” pp. 56–62, Apr. 2025, doi: https://doi.org/10.1109/iccsai64074.2025.11063888.
+
+[5]V. D. Milovidov, “Investor Sentiment and Stock Market Dynamics: Ways to Forecast Stock Prices,” Studies on Russian Economic Development, vol. 35, no. 4, pp. 518–529, Jul. 2024, doi: https://doi.org/10.1134/s1075700724700072.
+
+[6]C. Saravanos and A. Kanavos, “Forecasting stock market volatility using social media sentiment analysis,” Neural Computing and Applications, Dec. 2024, doi: https://doi.org/10.1007/s00521-024-10807-w.
+
+[7]A. E. de O. Carosia, A. E. A. da Silva, and G. P. Coelho, “Predicting the Brazilian Stock Market with Sentiment Analysis, Technical Indicators and Stock Prices: A Deep Learning Approach,” Computational Economics, Jun. 2024, doi: https://doi.org/10.1007/s10614-024-10636-y.
+
+[8]M. A. Arauco Ballesteros and E. A. Martínez Miranda, “Stock Market Forecasting Using a Neural Network Through Fundamental Indicators, Technical Indicators and Market Sentiment Analysis,” Computational Economics, Nov. 2024, doi: https://doi.org/10.1007/s10614-024-10711-4.
+
+[9]A. Hotasi and Dicky Prima Satya, “Predicting Stock Market Trends with News Sentiment Analysis and Historical Stock Market Data Analysis Using Data Mining Techniques,” Oct. 2023, doi: https://doi.org/10.1109/icaicta59291.2023.10390037.
+
+[10]Y. Bi, H. Liu, R. Wang, and S. Li, “Predicting Stock Market Movements Through Daily News Headlines Sentiment Analysis: US Stock Market,” IEEE Xplore, Sep. 01, 2021. https://ieeexplore.ieee.org/document/9696147
+
+[11]L. Owen and Finny Oktariani, “SENN: Stock Ensemble-based Neural Network for Stock Market Prediction using Historical Stock Data and Sentiment Analysis,” Aug. 2020, doi: https://doi.org/10.1109/icodsa50139.2020.9212982.
+
+[12]Y. Jiang and M. Wang, “Investor Sentiment and the Near-Term Stock Returns: Evidence from Chinese Stock Market,” IEEE Xplore, Sep. 01, 2009. https://ieeexplore.ieee.org/document/5300947
+
+[13]A. Ojha and V. Saxena, “Understanding Stock Market Trends Using Simple Moving Average (SMA) and Exponential Moving Average (EMA) Indicators,” 2023 6th International Conference on Contemporary Computing and Informatics (IC3I), Contemporary Computing and Informatics (IC3I), 2023 6th International Conference on, vol. 6, pp. 1931–1935, Sep. 2023, doi: https://doi.org/10.1109/IC3I59117.2023.10398001.
+
+[14]J. L. Miralles-Quirós, M. del M. Miralles-Quirós, and L. M. Valente Gonçalves, “The Profitability of Moving Average Rules: Smaller Is Better in the Brazilian Stock Market,” Emerging Markets Finance and Trade, vol. 55, no. 1, pp. 150–167, Jul. 2018, doi: https://doi.org/10.1080/1540496x.2017.1422428.
+
+[15]V. Zakamulin and J. Giner, “Trend following with momentum versus moving averages: a tale of differences,” Quantitative Finance, vol. 20, no. 6, pp. 985–1007, Feb. 2020, doi: https://doi.org/10.1080/14697688.2020.1716057.
+
+[16]M. Zatwarnicki, K. Zatwarnicki, and P. Stolarski, “Effectiveness of the Relative Strength Index Signals in Timing the Cryptocurrency Market,” Sensors, vol. 23, no. 3, p. 1664, Feb. 2023, doi: https://doi.org/10.3390/s23031664.
+
+[17]M. P. Cristescu, R. A. Nerisanu, D. A. Mara, and S.-V. Oprea, “Using Market News Sentiment Analysis for Stock Market Prediction,” Mathematics, vol. 10, no. 22, p. 4255, Nov. 2022, doi: https://doi.org/10.3390/math10224255.
+
+[18]P. Koukaras, C. Nousi, and C. Tjortjis, “Stock Market Prediction Using Microblogging Sentiment Analysis and Machine Learning,” Telecom, vol. 3, no. 2, pp. 358–378, May 2022, doi: https://doi.org/10.3390/telecom3020019.
+
+[19]Rajendiran P.Rajendiran and P.L.K. Priyadarsini, “Sentiment Analysis Using Treebank Filtered Preprocess with Relevant Vector Boost Classifier,” Research Square (Research Square), Sep. 2021, doi: https://doi.org/10.21203/rs.3.rs-894246/v1.
+
+[20]S. Bouktif, A. Fiaz, and M. Awad, “Augmented Textual Features-Based Stock Market Prediction,” IEEE Access, vol. 8, pp. 40269–40282, 2020, doi: https://doi.org/10.1109/access.2020.2976725.
+
+[21]A. Peivandizadeh et al., “Stock market prediction with transductive long short-term memory and social media sentiment analysis,” IEEE Access, vol. 12, pp. 87110–87130, Jan. 2024, doi: https://doi.org/10.1109/access.2024.3399548.
+
+[22]P. Mehta, S. Pandya, and K. Kotecha, “Harvesting social media sentiment analysis to enhance stock market prediction using deep learning,” PeerJ Computer Science, vol. 7, p. e476, Apr. 2021, doi: https://doi.org/10.7717/peerj-cs.476.
+
+[23]S. Gite, H. Khatavkar, K. Kotecha, S. Srivastava, P. Maheshwari, and N. Pandey, “Explainable stock prices prediction from financial news articles using sentiment analysis,” PeerJ Computer Science, vol. 7, p. e340, Jan. 2021, doi: https://doi.org/10.7717/peerj-cs.340.
+
+[24]K. Mishev, A. Gjorgjevikj, I. Vodenska, L. T. Chitkushev, and D. Trajanov, “Evaluation of Sentiment Analysis in Finance: From Lexicons to Transformers,” IEEE Access, vol. 8, pp. 131662–131682, 2020, doi: https://doi.org/10.1109/ACCESS.2020.3009626.
+
+[25]A. W. Li and G. S. Bastos, “Stock Market Forecasting Using Deep Learning and Technical Analysis: A Systematic Review,” IEEE Access, vol. 8, pp. 185232–185242, 2020, doi: https://doi.org/10.1109/access.2020.3030226.
+
+[26]F. G. D. C. Ferreira, A. H. Gandomi, and R. T. N. Cardoso, “Artificial Intelligence Applied to Stock Market Trading: A Review,” IEEE Access, vol. 9, no. 2169–3536, pp. 30898–30917, Feb. 2021, doi: https://doi.org/10.1109/access.2021.3058133.
