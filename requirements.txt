@@ -1,0 +1,15 @@
+streamlit
+yfinance
+pandas
+numpy
+matplotlib
+scikit-learn
+tensorflow
+statsmodels
+pmdarima
+pandas-ta
+finnhub-python
+transformers
+python-dotenv
+torch
+pathlib
