@@ -533,7 +533,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
             st.pyplot(fig)
 
             # Best model recommendation
-            best_model = max(metrics_data, key=lambda x: x['Directional Accuracy'])
+            best_model = max(metrics_data, key=lambda x: (x['Directional Accuracy'], x['Accuracy']))
             st.success(f"**Best Performing Model**: {best_model['Model']} "
                        f"(Directional Accuracy: {best_model['Directional Accuracy']:.2f}%, "
                        f"Accuracy: {best_model['Accuracy']:.2f}%)")
