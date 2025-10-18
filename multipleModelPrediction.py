@@ -225,7 +225,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
         data = fetch_stock_data(symbol, total_days)
         
     if data is not None:
-        st.info(f"Fetched {len(data)} trading days of data for {stock_name} ({symbol})")
+        #st.info(f"Fetched {len(data)} trading days of data for {stock_name} ({symbol})")
         
         # Feature Engineering
         with st.spinner("Adding features (Sentiment, SMAs, TA)..."):
@@ -237,9 +237,9 @@ if st.sidebar.button("Run Prediction", type="primary"):
             data["Sentiment"] = data["Date"].dt.strftime('%Y-%m-%d').map(sentiment_results)
             
             # Add SMAs
-            data['SMA5'] = data['Close'].rolling(window=5).mean()
+            #data['SMA5'] = data['Close'].rolling(window=5).mean()
             data['SMA10'] = data['Close'].rolling(window=10).mean()
-            data['SMA15'] = data['Close'].rolling(window=15).mean()
+            #data['SMA15'] = data['Close'].rolling(window=15).mean()
             data['SMA20'] = data['Close'].rolling(window=20).mean()
             
             # --- START: ADDED TECHNICAL INDICATORS ---
@@ -265,10 +265,12 @@ if st.sidebar.button("Run Prediction", type="primary"):
             st.dataframe(data.tail(10))
 
         # Data Preparation
+
+        #'SMA5', 'SMA10', 'SMA15',
         
         # --- START: UPDATED FEATURE LIST ---
         features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment', 
-                    'SMA5', 'SMA10', 'SMA15', 'SMA20',
+                    'SMA10', 'SMA20',
                     'EMA_12', 'EMA_26', 'MACD_12_26_9', 
                     'MACDh_12_26_9', 'MACDs_12_26_9', 'RSI_14']
         # --- END: UPDATED FEATURE LIST ---
