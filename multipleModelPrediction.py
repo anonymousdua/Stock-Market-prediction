@@ -14,7 +14,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.seasonal import seasonal_decompose
 import pmdarima as pm
-import pandas_ta as ta  # <-- ADDED IMPORT
+import pandas_ta as ta
 from sentimentTest import batch_get_sentiments 
 
 warnings.filterwarnings('ignore')
@@ -109,16 +109,16 @@ prediction_days = st.sidebar.selectbox(
     help="Number of days to predict and evaluate."
 )
 
-# --- Fixed Data Parameters ---
-st.sidebar.header("Data Settings")
-total_days = 300  # Fixed to 300 days
+# --- (REMOVED) Fixed Data Parameters ---
+# total_days = 300 # This is now calculated dynamically
 
 # --- Data Fetching Function ---
 @st.cache_data
 def fetch_stock_data(symbol, days_to_fetch):
     try:
         end_date = pd.Timestamp.now()
-        start_date = end_date - pd.Timedelta(days=int(days_to_fetch * 1.7))
+        # Fetch more calendar days to account for non-trading days
+        start_date = end_date - pd.Timedelta(days=int(days_to_fetch * 1.7)) 
         stock = yf.Ticker(symbol)
         data = stock.history(start=start_date, end=end_date)
         
@@ -126,10 +126,15 @@ def fetch_stock_data(symbol, days_to_fetch):
             st.error(f"No data found for symbol {symbol}. Please try another stock.")
             return None
         
+        # Get the exact number of trading days requested
         data = data[['Open', 'High', 'Low', 'Close', 'Volume']].tail(days_to_fetch)
 
-        if len(data) < days_to_fetch * 0.8:
-            st.warning(f"Only found {len(data)} trading days of data (requested {days_to_fetch}).")
+        # Check if we got enough data
+        if len(data) < days_to_fetch:
+            st.warning(f"Only found {len(data)} trading days of data (requested {days_to_fetch}). Results may be inaccurate.")
+            if len(data) < days_to_fetch * 0.8:
+                 st.error(f"Significantly less data found ({len(data)}) than requested ({days_to_fetch}). Stopping.")
+                 return None
 
         return data
     except Exception as e:
@@ -215,14 +220,38 @@ if st.sidebar.button("Run Prediction", type="primary"):
     # All models are always selected
     selected_models = ["LSTM", "XLSTM", "SVM", "ARIMA", "SARIMA"]
     
-    # Validate parameters
-    min_required_days = lookback_period + prediction_days + 50
-    if total_days < min_required_days:
-        st.error(f"Not enough data! You need at least {min_required_days} total days. Please adjust your parameters.")
-        st.stop()
+    # --- START: Calculate Required Data ---
+    # Determine data needed based on inputs
+    # Longest TA indicator (MACD(12,26,9)) needs 33 periods to stabilize (26-1 for EMA diff + 9-1 for signal line).
+    # We will lose 33 rows on data.dropna()
+    DAYS_LOST_TO_TA = 33 
     
-    with st.spinner(f"Fetching {total_days} days of data for {stock_name}..."):
-        data = fetch_stock_data(symbol, total_days)
+    # Minimum number of training SAMPLES (not days) we want. 
+    # (Original code had a buffer of 50).
+    MIN_TRAINING_SAMPLES = 50
+    
+    # Total clean days needed = (lookback to create 1st sample + min training samples) + prediction days
+    # (lookback + 50) is the length of the training set (to get 50 samples)
+    total_clean_days_needed = (lookback_period + MIN_TRAINING_SAMPLES) + prediction_days
+    
+    # Total days to fetch = clean days + days lost to TA NaNs
+    total_days_to_fetch = total_clean_days_needed + DAYS_LOST_TO_TA
+    
+    st.sidebar.info(f"Fetching {total_days_to_fetch} trading days:\n"
+                    f"- {prediction_days} (for prediction)\n"
+                    f"- {lookback_period} (for lookback)\n"
+                    f"- {MIN_TRAINING_SAMPLES} (min training)\n"
+                    f"- {DAYS_LOST_TO_TA} (for TA warmup)")
+    # --- END: Calculate Required Data ---
+    
+    # --- (REMOVED) Old Validation Check ---
+    # min_required_days = lookback_period + prediction_days + 50
+    # if total_days < min_required_days:
+    #     st.error(f"Not enough data! You need at least {min_required_days} total days. Please adjust your parameters.")
+    #     st.stop()
+    
+    with st.spinner(f"Fetching {total_days_to_fetch} days of data for {stock_name}..."):
+        data = fetch_stock_data(symbol, total_days_to_fetch)
         
     if data is not None:
         #st.info(f"Fetched {len(data)} trading days of data for {stock_name} ({symbol})")
@@ -237,9 +266,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
             data["Sentiment"] = data["Date"].dt.strftime('%Y-%m-%d').map(sentiment_results)
             
             # Add SMAs
-            #data['SMA5'] = data['Close'].rolling(window=5).mean()
             data['SMA10'] = data['Close'].rolling(window=10).mean()
-            #data['SMA15'] = data['Close'].rolling(window=15).mean()
             data['SMA20'] = data['Close'].rolling(window=20).mean()
             
             # --- START: ADDED TECHNICAL INDICATORS ---
@@ -265,8 +292,6 @@ if st.sidebar.button("Run Prediction", type="primary"):
             st.dataframe(data.tail(10))
 
         # Data Preparation
-
-        #'SMA5', 'SMA10', 'SMA15',
         
         # --- START: UPDATED FEATURE LIST ---
         features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment', 
@@ -286,9 +311,11 @@ if st.sidebar.button("Run Prediction", type="primary"):
             
         data_featured = data[features].values
         
-        min_data_needed = lookback_period + prediction_days + 20
-        if len(data_featured) < min_data_needed:
-            st.error(f"Not enough data after adding features! Need at least {min_data_needed} days but only have {len(data_featured)}.")
+        # Check if we have enough data *after* dropna
+        min_data_needed_after_dropna = lookback_period + prediction_days + MIN_TRAINING_SAMPLES
+        if len(data_featured) < min_data_needed_after_dropna:
+            st.error(f"Not enough data after adding features! Need at least {min_data_needed_after_dropna} days but only have {len(data_featured)}.")
+            st.info(f"This was calculated from: {lookback_period} (lookback) + {prediction_days} (predict) + {MIN_TRAINING_SAMPLES} (min training).")
             st.stop()
 
         # Split data
@@ -322,6 +349,11 @@ if st.sidebar.button("Run Prediction", type="primary"):
                 X_train, y_train = create_sequences(scaled_train_data, lookback_period)
                 X_test, _ = create_sequences(scaled_test_data, lookback_period)
                 
+                # Check for sufficient training data
+                if len(X_train) == 0:
+                    st.error(f"LSTM Error: Not enough data to create training sequences (Need {lookback_period+1} days, got {len(scaled_train_data)})")
+                    raise Exception("Insufficient data for LSTM training sequences.")
+
                 lstm_model = build_lstm_model((X_train.shape[1], X_train.shape[2]))
                 
                 # Training progress
@@ -347,6 +379,10 @@ if st.sidebar.button("Run Prediction", type="primary"):
                 X_train, y_train = create_sequences(scaled_train_data, lookback_period)
                 X_test, _ = create_sequences(scaled_test_data, lookback_period)
                 
+                if len(X_train) == 0:
+                    st.error(f"XLSTM Error: Not enough data to create training sequences (Need {lookback_period+1} days, got {len(scaled_train_data)})")
+                    raise Exception("Insufficient data for XLSTM training sequences.")
+
                 xlstm_model = build_xlstm_model((X_train.shape[1], X_train.shape[2]))
                 
                 for epoch in range(epochs):
@@ -370,6 +406,10 @@ if st.sidebar.button("Run Prediction", type="primary"):
                 X_train_svm, y_train_svm = prepare_svm_data(scaled_train_data, lookback_period)
                 X_test_svm, _ = prepare_svm_data(scaled_test_data, lookback_period)
                 
+                if len(X_train_svm) == 0:
+                    st.error(f"SVM Error: Not enough data to create training sequences (Need {lookback_period+1} days, got {len(scaled_train_data)})")
+                    raise Exception("Insufficient data for SVM training sequences.")
+
                 svm_model = build_svm_model(svm_kernel)
                 svm_model.fit(X_train_svm, y_train_svm)
                 
@@ -453,6 +493,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
             
             # Skip if no valid predictions
             if len(predictions) == 0 or np.all(predictions == 0):
+                st.warning(f"Model {model_name} produced no valid predictions. Skipping.")
                 continue
             
             rmse = np.sqrt(mean_squared_error(actual_trimmed, predictions))
@@ -482,6 +523,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
         # Display metrics table
         if metrics_data:
             metrics_df = pd.DataFrame(metrics_data)
+            metrics_df.to_csv(f"{symbol}metrics.csv", index=False)
             
             # Display metrics in a nice layout
             cols = st.columns(len(metrics_data))
