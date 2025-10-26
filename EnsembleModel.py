@@ -498,7 +498,7 @@ if st.sidebar.button("Run Prediction", type="primary"):
         
         if metrics_data:
             metrics_df = pd.DataFrame(metrics_data)
-            #metrics_df.to_csv(f"{symbol}_metrics.csv", index=False)
+            metrics_df.to_csv(f"{symbol}_metrics.csv", index=False)
             
             # Display metrics in columns
             cols = st.columns(len(metrics_data))
