@@ -25,7 +25,7 @@ st.set_page_config(page_title="Stock Price Predictor", layout="wide")
 
 # --- App Title and Description ---
 st.title("Advanced Stock Price Predictor with Multiple Models")
-st.markdown("This app uses multiple machine learning models including LSTM, xLSTM, SVM, ARIMA, SARIMA, and ensemble methods (Stacking & Voting) to predict stock prices.1")
+st.markdown("This app uses multiple machine learning models including LSTM, xLSTM, SVM, ARIMA, SARIMA, and ensemble methods (Stacking & Voting) to predict stock prices.")
 
 # --- Sidebar for User Inputs ---
 st.sidebar.header("Stock Selection")
